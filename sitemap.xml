@@ -1,14 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-<!-- replace https://probgen22.github.io with the address where this site is being hosted -->
-   <url>
-       <loc>https://probgen22.github.io</loc>
-   </url>
-   <url>
-       <loc>https://probgen22.github.io/registration</loc>
-   </url>
-   <url>
-       <loc>https://probgen22.github.io/program</loc>
-   </url>
+    <url>
+        <loc>https://probgen22.github.io/index.html</loc>
+    </url>
+    <url>
+        <loc>https://probgen22.github.io/registration/index.html</loc>
+    </url>
+    <url>
+        <loc>https://probgen22.github.io/program/index.html</loc>
+    </url>
 </urlset> 
-
