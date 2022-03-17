@@ -2,6 +2,7 @@
 Process abstracts to create book.
 """
 import csv
+import collections
 import sys
 import textwrap
 import dataclasses
@@ -31,6 +32,9 @@ class Abstract:
     is_talk: bool
     keywords: str
     topics: str
+
+    def __post_init__(self):
+        self.author_last_name = self.author.split()[-1]
 
     def check_authors(self):
         if self.coauthors.startswith(self.author):
@@ -65,28 +69,34 @@ class Abstract:
 
 
     def as_html(self, out):
-        print(f"<h1> {html_esc(self.title)}</h1>", file=out)
-        print("<p>", file=out)
+        print(f"<table id='{self.id}'>\n", file=out)
+
+        print("<tr>\n", file=out)
+        anchor = f"<a name='{self.id}'>{self.id}</a>"
+        print(f"\t<td class='date' rowspan='4'>{anchor}</td>\n", file=out)
+        print(f"\t<td class='title'>{html_esc(self.title)}</td>\n", file=out)
+        print("</tr>\n", file=out)
+
         authors = html_esc(self.author)
         if len(self.coauthors) > 0:
             if not self.coauthors.startswith(","):
                 authors += ","
             authors += f" {html_esc(self.coauthors)}"
-        print(f"**Authors:** {authors}", file=out)
-        print(file=out)
-        affiliations = html_esc(self.affiliations)
-        print(f"**Affiliations:** {affiliations}", file=out)
-        print(file=out)
-        keywords = html_esc(self.keywords)
-        print(f"**Keywords:** {keywords}", file=out)
-        print(file=out)
-        topics = html_esc(self.topics)
-        print(f"**Topics:** {topics}", file=out)
-        print(file=out)
-        text = textwrap.fill(html_esc(self.text))
-        print(text, file=out)
-        print(file=out)
-        print("\n</p>\n", file=out)
+        print("<tr>\n", file=out)
+        print(f"\t<td class='speaker'>{authors}</td>\n", file=out)
+        print("</tr>\n", file=out)
+
+        print("<tr>\n", file=out)
+        print(f"\t<td class='speaker'>{html_esc(self.affiliations)}</td>\n", file=out)
+        print("</tr>\n", file=out)
+
+
+        text = textwrap.indent(textwrap.fill(html_esc(self.text)), prefix="\t\t")
+        print("<tr>\n", file=out)
+        print(f"\t<td class='abstract'>\n{text}</td>", file=out)
+        print("</tr>\n", file=out)
+        print("</table>", file=out)
+
 
 class AbstractBook:
     def __init__(self, abstracts):
@@ -116,28 +126,40 @@ def main():
                 affiliations=line["Affiliations"],
                 title=line["Title"],
                 text=line["Abstract (max 1500 characters)"],
-                is_talk=line["Talk or Poster?"] == "Talk",
+                is_talk=line["Type"] == "Talk",
                 keywords=line["Keywords"],
                 topics=", ".join(line["Topics (select all that apply)"].split(";")),
             )
             abstract.check_authors()
             abstracts.append(abstract)
+    abstracts.sort(key=lambda x: x.author_last_name)
+    talks = [ab for ab in abstracts if ab.is_talk]
+    posters = [ab for ab in abstracts if not ab.is_talk]
+    ids = set()
+    for prefix, the_abstracts in zip("TP", [talks, posters]):
+        for j, ab in enumerate(the_abstracts, 1):
+            ab.id = f"{prefix}{j:02d}"
+            ids.add(ab.id)
 
-    abstracts.sort(key=lambda x: x.author)
-    # random.seed(42)
-    # talks[8] = None
-    # talks[37] = None
-    # random.shuffle(talks)
-    # print(len(talks))
-    book = AbstractBook(abstracts)
-    book.as_html(sys.stdout)
+    by_name = collections.defaultdict(list)
+    for abstract in abstracts:
+        by_name[abstract.author_last_name[0]].append(abstract)
+
+    for title, the_abstracts in zip(["Talks", "Posters"], [talks, posters]):
+        print(f"<h3><a name='{title}'>{title}</a></h3>")
+        book = AbstractBook(the_abstracts)
+        book.as_html(sys.stdout)
+
+    print("<h3><a name='Author_index'>Author index</a></h3>")
+    for letter in sorted(by_name.keys()):
+        print(f"<h4>{letter.upper()}</h4>")
+        s = ""
+        for abstract in by_name[letter]:
+            s += f"<a href='abstracts/index.html#{abstract.id}'>{abstract.author}</a>, "
+        s = s[:-2]
+        print("<p>", s, "</p>")
+
     # book.as_markdown(sys.stdout)
-    # for talk in talks:
-    #     # print(talk)
-    #     if talk is not None:
-    #         print(talk.author)
-    # for abstract in book.abstracts:
-    #     print(abstract.keywords)
 
 if __name__ == "__main__":
     main()
