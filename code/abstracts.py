@@ -26,10 +26,10 @@ class Abstract:
     email: str
     author: str
     coauthors: str
+    id: str
     affiliations: str
     title: str
     text: str
-    is_talk: bool
     keywords: str
     topics: str
 
@@ -119,45 +119,53 @@ def main():
         reader = csv.DictReader(csvfile)
         for line in reader:
             # print(list(line.keys()))
+            id = int(line["Talk Number"])
             abstract = Abstract(
                 email=line["Username"],
-                author=line["Presenter"],
+                author=line["Presenter name"],
+                id = f"T{id:02d}",
                 coauthors=line["Coauthors"],
                 affiliations=line["Affiliations"],
                 title=line["Title"],
                 text=line["Abstract (max 1500 characters)"],
-                is_talk=line["Type"] == "Talk",
                 keywords=line["Keywords"],
                 topics=", ".join(line["Topics (select all that apply)"].split(";")),
             )
             abstract.check_authors()
             abstracts.append(abstract)
-    abstracts.sort(key=lambda x: x.author_last_name)
-    talks = [ab for ab in abstracts if ab.is_talk]
-    posters = [ab for ab in abstracts if not ab.is_talk]
+    # for abstracts in
+
+    abstracts.sort(key=lambda x: x.id)
+    # for ab in abstracts:
+    #     print(ab.id)
+    # talks = [ab for ab in abstracts if ab.is_talk]
+    # posters = [ab for ab in abstracts if not ab.is_talk]
     ids = set()
-    for prefix, the_abstracts in zip("TP", [talks, posters]):
-        for j, ab in enumerate(the_abstracts, 1):
-            ab.id = f"{prefix}{j:02d}"
-            ids.add(ab.id)
+    # for prefix, the_abstracts in zip("TP", [talks, posters]):
+    prefix = "T"
+    for j, ab in enumerate(abstracts, 1):
+        ab.id = f"{prefix}{j:02d}"
+        ids.add(ab.id)
 
     by_name = collections.defaultdict(list)
     for abstract in abstracts:
         by_name[abstract.author_last_name[0]].append(abstract)
 
-    for title, the_abstracts in zip(["Talks", "Posters"], [talks, posters]):
-        print(f"<h3><a name='{title}'>{title}</a></h3>")
-        book = AbstractBook(the_abstracts)
-        book.as_html(sys.stdout)
+    # for title, the_abstracts in zip(["Talks", "Posters"], [talks, posters]):
+    title = "Talks"
 
-    print("<h3><a name='Author_index'>Author index</a></h3>")
-    for letter in sorted(by_name.keys()):
-        print(f"<h4>{letter.upper()}</h4>")
-        s = ""
-        for abstract in by_name[letter]:
-            s += f"<a href='abstracts/index.html#{abstract.id}'>{abstract.author}</a>, "
-        s = s[:-2]
-        print("<p>", s, "</p>")
+    print(f"<h3><a name='{title}'>{title}</a></h3>")
+    book = AbstractBook(abstracts)
+    book.as_html(sys.stdout)
+
+    # print("<h3><a name='Author_index'>Author index</a></h3>")
+    # for letter in sorted(by_name.keys()):
+    #     print(f"<h4>{letter.upper()}</h4>")
+    #     s = ""
+    #     for abstract in by_name[letter]:
+    #         s += f"<a href='abstracts/index.html#{abstract.id}'>{abstract.author}</a>, "
+    #     s = s[:-2]
+    #     print("<p>", s, "</p>")
 
     # book.as_markdown(sys.stdout)
 
