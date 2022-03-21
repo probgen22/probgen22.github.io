@@ -111,7 +111,7 @@ class AbstractBook:
             abstract.as_html(out)
 
 
-def main():
+def process_talks():
 
     infile = sys.argv[1]
     abstracts = []
@@ -169,5 +169,55 @@ def main():
 
     # book.as_markdown(sys.stdout)
 
+def process_posters():
+
+    infile = sys.argv[1]
+    abstracts = []
+    with open(infile) as csvfile:
+        reader = csv.DictReader(csvfile)
+        for line in reader:
+            # print(list(line.keys()))
+            abstract = Abstract(
+                email=line["Username"],
+                author=line["Presenter"],
+                # id = f"T{id:02d}",
+                id=None,
+                coauthors=line["Coauthors"],
+                affiliations=line["Affiliations"],
+                title=line["Title"],
+                text=line["Abstract (max 1500 characters)"],
+                keywords=line["Keywords"],
+                topics=", ".join(line["Topics (select all that apply)"].split(";")),
+            )
+            abstract.check_authors()
+            abstracts.append(abstract)
+    # for abstracts in
+
+    abstracts.sort(key=lambda x: x.author_last_name)
+    for j, ab in enumerate(abstracts, 1):
+        ab.id = f"P{j:02d}"
+        # print(f"{ab.id}-{ab.author_last_name}")
+
+    # for title, the_abstracts in zip(["Talks", "Posters"], [talks, posters]):
+    title = "Posters"
+
+    print(f"<h3><a name='{title}'>{title}</a></h3>")
+    book = AbstractBook(abstracts)
+    book.as_html(sys.stdout)
+
+    # print("<h3><a name='Author_index'>Author index</a></h3>")
+    # for letter in sorted(by_name.keys()):
+    #     print(f"<h4>{letter.upper()}</h4>")
+    #     s = ""
+    #     for abstract in by_name[letter]:
+    #         s += f"<a href='abstracts/index.html#{abstract.id}'>{abstract.author}</a>, "
+    #     s = s[:-2]
+    #     print("<p>", s, "</p>")
+
+    # book.as_markdown(sys.stdout)
+
+
 if __name__ == "__main__":
-    main()
+    # main()
+    # process_talks()
+    process_posters()
