@@ -23,7 +23,6 @@ def html_esc(s):
 
 @dataclasses.dataclass
 class Abstract:
-    email: str
     author: str
     coauthors: str
     id: str
@@ -34,54 +33,35 @@ class Abstract:
     topics: str
 
     def __post_init__(self):
-        self.author_last_name = self.author.split()[-1]
+        author = self.author
+        j = author.find("[")
+        if j != -1:
+            author = self.author[:j]
+        self.author_last_name = author.split()[-1]
+        self.author_first_name = author.split()[0]
 
-    def check_authors(self):
         if self.coauthors.startswith(self.author):
             self.coauthors = self.coauthors[len(self.author):]
 
-    def as_markdown(self, out, submission_id=None):
-        print(f"# {md_esc(self.title)}", file=out)
-
-        if submission_id is not None:
-            print(f"**Submission ID:** {submission_id}", file=out)
-            print(file=out)
-        authors = md_esc(self.author)
+        self.author_list = self.author
         if len(self.coauthors) > 0:
             if not self.coauthors.startswith(","):
-                authors += ","
-            authors += f" {md_esc(self.coauthors)}"
-        print(f"**Authors:** {authors}", file=out)
-        print(file=out)
-        affiliations = md_esc(self.affiliations)
-        print(f"**Affiliations:** {affiliations}", file=out)
-        print(file=out)
-        keywords = md_esc(self.keywords)
-        print(f"**Keywords:** {keywords}", file=out)
-        print(file=out)
-        topics = md_esc(self.topics)
-        print(f"**Topics:** {topics}", file=out)
-        print(file=out)
-        text = textwrap.fill(md_esc(self.text))
-        print(text, file=out)
-        print(file=out)
-        print("\n\\newpage\n", file=out)
+                self.author_list += ","
+            self.author_list += f" {self.coauthors}"
+        self.author = author
+        print(self.author, "\t", self.author_list)
 
 
     def as_html(self, out):
         print(f"<table id='{self.id}'>\n", file=out)
 
         print("<tr>\n", file=out)
-        anchor = f"<a name='{self.id}'>{self.id}</a>"
+        anchor = f"<a href='abstracts/index.html#{self.id}' title='{self.id}'>{self.id}</a>"
         print(f"\t<td class='date' rowspan='4'>{anchor}</td>\n", file=out)
         print(f"\t<td class='title'>{html_esc(self.title)}</td>\n", file=out)
         print("</tr>\n", file=out)
 
-        authors = html_esc(self.author)
-        if len(self.coauthors) > 0:
-            if not self.coauthors.startswith(","):
-                authors += ","
-            authors += f" {html_esc(self.coauthors)}"
+        authors = html_esc(self.author_list)
         print("<tr>\n", file=out)
         print(f"\t<td class='speaker'>{authors}</td>\n", file=out)
         print("</tr>\n", file=out)
@@ -89,7 +69,6 @@ class Abstract:
         print("<tr>\n", file=out)
         print(f"\t<td class='speaker'>{html_esc(self.affiliations)}</td>\n", file=out)
         print("</tr>\n", file=out)
-
 
         text = textwrap.indent(textwrap.fill(html_esc(self.text)), prefix="\t\t")
         print("<tr>\n", file=out)
@@ -111,9 +90,9 @@ class AbstractBook:
             abstract.as_html(out)
 
 
-def process_talks():
+def process_talks(out):
 
-    infile = sys.argv[1]
+    infile = "data/talks-cleaned.csv"
     abstracts = []
     with open(infile) as csvfile:
         reader = csv.DictReader(csvfile)
@@ -121,7 +100,7 @@ def process_talks():
             # print(list(line.keys()))
             id = int(line["Talk Number"])
             abstract = Abstract(
-                email=line["Username"],
+                # email=line["Username"],
                 author=line["Presenter name"],
                 id = f"T{id:02d}",
                 coauthors=line["Coauthors"],
@@ -131,56 +110,27 @@ def process_talks():
                 keywords=line["Keywords"],
                 topics=", ".join(line["Topics (select all that apply)"].split(";")),
             )
-            abstract.check_authors()
             abstracts.append(abstract)
-    # for abstracts in
 
     abstracts.sort(key=lambda x: x.id)
-    # for ab in abstracts:
-    #     print(ab.id)
-    # talks = [ab for ab in abstracts if ab.is_talk]
-    # posters = [ab for ab in abstracts if not ab.is_talk]
-    ids = set()
-    # for prefix, the_abstracts in zip("TP", [talks, posters]):
-    prefix = "T"
-    for j, ab in enumerate(abstracts, 1):
-        ab.id = f"{prefix}{j:02d}"
-        ids.add(ab.id)
 
-    by_name = collections.defaultdict(list)
-    for abstract in abstracts:
-        by_name[abstract.author_last_name[0]].append(abstract)
-
-    # for title, the_abstracts in zip(["Talks", "Posters"], [talks, posters]):
     title = "Talks"
-
-    print(f"<h3><a name='{title}'>{title}</a></h3>")
+    print(f"<h3><a name='{title}'>{title}</a></h3>", file=out)
     book = AbstractBook(abstracts)
-    book.as_html(sys.stdout)
+    book.as_html(out)
+    return abstracts
 
-    # print("<h3><a name='Author_index'>Author index</a></h3>")
-    # for letter in sorted(by_name.keys()):
-    #     print(f"<h4>{letter.upper()}</h4>")
-    #     s = ""
-    #     for abstract in by_name[letter]:
-    #         s += f"<a href='abstracts/index.html#{abstract.id}'>{abstract.author}</a>, "
-    #     s = s[:-2]
-    #     print("<p>", s, "</p>")
+def process_posters(out):
 
-    # book.as_markdown(sys.stdout)
-
-def process_posters():
-
-    infile = sys.argv[1]
+    infile = "data/posters-cleaned.csv"
     abstracts = []
     with open(infile) as csvfile:
         reader = csv.DictReader(csvfile)
         for line in reader:
             # print(list(line.keys()))
             abstract = Abstract(
-                email=line["Username"],
-                author=line["Presenter"],
-                # id = f"T{id:02d}",
+                # email=line["Username"],
+                author=line["Presenter name"],
                 id=None,
                 coauthors=line["Coauthors"],
                 affiliations=line["Affiliations"],
@@ -189,35 +139,36 @@ def process_posters():
                 keywords=line["Keywords"],
                 topics=", ".join(line["Topics (select all that apply)"].split(";")),
             )
-            abstract.check_authors()
             abstracts.append(abstract)
-    # for abstracts in
 
-    abstracts.sort(key=lambda x: x.author_last_name)
+    abstracts.sort(key=lambda x: (x.author_last_name, x.author_first_name))
     for j, ab in enumerate(abstracts, 1):
         ab.id = f"P{j:02d}"
         # print(f"{ab.id}-{ab.author_last_name}")
 
-    # for title, the_abstracts in zip(["Talks", "Posters"], [talks, posters]):
     title = "Posters"
-
-    print(f"<h3><a name='{title}'>{title}</a></h3>")
+    print(f"<h3><a name='{title}'>{title}</a></h3>", file=out)
     book = AbstractBook(abstracts)
-    book.as_html(sys.stdout)
+    book.as_html(out)
+    return abstracts
 
-    # print("<h3><a name='Author_index'>Author index</a></h3>")
-    # for letter in sorted(by_name.keys()):
-    #     print(f"<h4>{letter.upper()}</h4>")
-    #     s = ""
-    #     for abstract in by_name[letter]:
-    #         s += f"<a href='abstracts/index.html#{abstract.id}'>{abstract.author}</a>, "
-    #     s = s[:-2]
-    #     print("<p>", s, "</p>")
+def process_authors(abstracts, out):
+    by_name = collections.defaultdict(list)
+    for ab in abstracts:
+        by_name[ab.author_last_name[0]].append(ab)
 
-    # book.as_markdown(sys.stdout)
+    print("<h3><a name='Presenter_index'>Presenter index</a></h3>", file=out)
+    for letter in sorted(by_name.keys()):
+        print(f"<h4>{letter.upper()}</h4>", file=out)
+        s = ""
+        for abstract in by_name[letter]:
+            s += f"<a href='abstracts/index.html#{abstract.id}'>{abstract.author}</a>, "
+        s = s[:-2]
+        print("<p>", s, "</p>", file=out)
 
 
 if __name__ == "__main__":
-    # main()
-    # process_talks()
-    process_posters()
+    with open("tmp.html", "w") as f:
+        ab1 = process_talks(f)
+        ab2 = process_posters(f)
+        process_authors(ab1 + ab2, f)
