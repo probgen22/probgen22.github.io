@@ -32,6 +32,10 @@ class Abstract:
     keywords: str
     topics: str
 
+    def _normalise_keywords(self):
+        kwds = self.keywords.split(",;")
+        self.keywords = ", ".join(kw.title() for kw in kwds)
+
     def __post_init__(self):
         author = self.author
         j = author.find("[")
@@ -41,7 +45,7 @@ class Abstract:
         self.author_first_name = author.split()[0]
 
         if self.coauthors.startswith(self.author):
-            self.coauthors = self.coauthors[len(self.author):]
+            self.coauthors = self.coauthors[len(self.author) :]
 
         self.author_list = self.author
         if len(self.coauthors) > 0:
@@ -49,15 +53,17 @@ class Abstract:
                 self.author_list += ","
             self.author_list += f" {self.coauthors}"
         self.author = author
-        print(self.author, "\t", self.author_list)
 
+        self._normalise_keywords()
 
     def as_html(self, out):
         print(f"<table id='{self.id}'>\n", file=out)
 
         print("<tr>\n", file=out)
-        anchor = f"<a href='abstracts/index.html#{self.id}' title='{self.id}'>{self.id}</a>"
-        print(f"\t<td class='date' rowspan='4'>{anchor}</td>\n", file=out)
+        anchor = (
+            f"<a href='abstracts/index.html#{self.id}' title='{self.id}'>{self.id}</a>"
+        )
+        print(f"\t<td class='date' rowspan='6'>{anchor}</td>\n", file=out)
         print(f"\t<td class='title'>{html_esc(self.title)}</td>\n", file=out)
         print("</tr>\n", file=out)
 
@@ -67,7 +73,27 @@ class Abstract:
         print("</tr>\n", file=out)
 
         print("<tr>\n", file=out)
-        print(f"\t<td class='speaker'>{html_esc(self.affiliations)}</td>\n", file=out)
+        print(
+            "\t<td class='speaker'><b>Affiliations:</b> "
+            f"{html_esc(self.affiliations)}</td>\n",
+            file=out,
+        )
+        print("</tr>\n", file=out)
+
+        print("<tr>\n", file=out)
+        print(
+            f"\t<td class='speaker'><b>Topics:</b> {html_esc(self.topics)}</td>\n",
+            file=out,
+        )
+        print("</tr>\n", file=out)
+
+        print("<tr>\n", file=out)
+        if len(self.keywords) > 0:
+            print(
+                f"\t<td class='speaker'><b>Keywords:</b> "
+                f"{html_esc(self.keywords)}</td>\n",
+                file=out,
+            )
         print("</tr>\n", file=out)
 
         text = textwrap.indent(textwrap.fill(html_esc(self.text)), prefix="\t\t")
@@ -102,7 +128,7 @@ def process_talks(out):
             abstract = Abstract(
                 # email=line["Username"],
                 author=line["Presenter name"],
-                id = f"T{id:02d}",
+                id=f"T{id:02d}",
                 coauthors=line["Coauthors"],
                 affiliations=line["Affiliations"],
                 title=line["Title"],
@@ -119,6 +145,7 @@ def process_talks(out):
     book = AbstractBook(abstracts)
     book.as_html(out)
     return abstracts
+
 
 def process_posters(out):
 
@@ -151,6 +178,7 @@ def process_posters(out):
     book = AbstractBook(abstracts)
     book.as_html(out)
     return abstracts
+
 
 def process_authors(abstracts, out):
     by_name = collections.defaultdict(list)
