@@ -27,9 +27,30 @@ def normalise(kwd):
     for word in kwd.split():
         if not word[0].isupper():
             word = word.title()
-        words.append(word)
+        word = word.strip()
+        if len(word) > 0:
+            words.append(word)
     if words == ["Ancestral", "Recombination", "Graphs"]:
         words = ["Ancestral", "Recombination", "Graph"]
+    if words == ["Simulations"]:
+        words = ["Simulation"]
+    if words == ["Tree", "Sequences"]:
+        words = ["Tree", "Sequence"]
+    if words == ["Hidden", "Markov", "Models"]:
+        words = ["Hidden", "Markov", "Model"]
+    if words == ["Coalescence"]:
+        words = ["Coalescent"]
+    if words == ["Identity-By-Descent"]:
+        words = ["Identity", "By", "Descent"]
+    if words == ["Next-Generation", "Sequencing"]:
+        words = ["Next", "Generation", "Sequencing"]
+    if words == ["UK", "BioBank"]:
+        words = ["UK", "Biobank"]
+    if words == ["Distribution", "Of", "Fitness"]:
+        words = ["Distribution", "Of", "Fitness", "Effects"]
+    if len(words) > 0:
+        if words[-1] == "(Pca)":
+            words = words[:-1]
     return " ".join(words)
 
 
@@ -45,8 +66,11 @@ class Abstract:
     topics: str
 
     def _normalise_keywords(self):
-        kwds = re.split(";|,", self.keywords)
-        self.keywords = [normalise(kwd) for kwd in kwds]
+        kwds = re.split(";|,|\.", self.keywords)
+        if kwds == [""]:
+            kwds = []
+        normalised = [normalise(kwd) for kwd in kwds]
+        self.keywords = [kwd for kwd in normalised if kwd != ""]
 
     def __post_init__(self):
         author = self.author
@@ -208,8 +232,20 @@ def process_authors(abstracts, out):
         print("<p>", s, "</p>", file=out)
 
 
+def process_keywords(abstracts):
+    keywords = []
+    for ab in abstracts:
+        keywords.extend(ab.keywords)
+    keywords.sort()
+    with open("keywords.txt", "w") as f:
+        for kw in keywords:
+            print(kw, file=f)
+
+
 if __name__ == "__main__":
     with open("tmp.html", "w") as f:
         ab1 = process_talks(f)
         ab2 = process_posters(f)
         process_authors(ab1 + ab2, f)
+
+    process_keywords(ab1 + ab2)
