@@ -8,6 +8,7 @@ import textwrap
 import dataclasses
 import random
 from typing import List
+import re
 import html
 
 import markdown_strings
@@ -19,6 +20,17 @@ def md_esc(s):
 
 def html_esc(s):
     return html.escape(s)
+
+
+def normalise(kwd):
+    words = []
+    for word in kwd.split():
+        if not word[0].isupper():
+            word = word.title()
+        words.append(word)
+    if words == ["Ancestral", "Recombination", "Graphs"]:
+        words = ["Ancestral", "Recombination", "Graph"]
+    return " ".join(words)
 
 
 @dataclasses.dataclass
@@ -33,8 +45,8 @@ class Abstract:
     topics: str
 
     def _normalise_keywords(self):
-        kwds = self.keywords.split(",;")
-        self.keywords = ", ".join(kw.title() for kw in kwds)
+        kwds = re.split(";|,", self.keywords)
+        self.keywords = [normalise(kwd) for kwd in kwds]
 
     def __post_init__(self):
         author = self.author
@@ -89,9 +101,10 @@ class Abstract:
 
         print("<tr>\n", file=out)
         if len(self.keywords) > 0:
+            keywords = ", ".join(self.keywords)
             print(
                 f"\t<td class='speaker'><b>Keywords:</b> "
-                f"{html_esc(self.keywords)}</td>\n",
+                f"{html_esc(keywords)}</td>\n",
                 file=out,
             )
         print("</tr>\n", file=out)
