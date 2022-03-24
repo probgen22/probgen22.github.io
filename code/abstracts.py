@@ -8,6 +8,7 @@ import textwrap
 import dataclasses
 import random
 from typing import List
+import re
 import html
 
 import markdown_strings
@@ -21,6 +22,38 @@ def html_esc(s):
     return html.escape(s)
 
 
+def normalise(kwd):
+    words = []
+    for word in kwd.split():
+        if not word[0].isupper():
+            word = word.title()
+        word = word.strip()
+        if len(word) > 0:
+            words.append(word)
+    if words == ["Ancestral", "Recombination", "Graphs"]:
+        words = ["Ancestral", "Recombination", "Graph"]
+    if words == ["Simulations"]:
+        words = ["Simulation"]
+    if words == ["Tree", "Sequences"]:
+        words = ["Tree", "Sequence"]
+    if words == ["Hidden", "Markov", "Models"]:
+        words = ["Hidden", "Markov", "Model"]
+    if words == ["Coalescence"]:
+        words = ["Coalescent"]
+    if words == ["Identity-By-Descent"]:
+        words = ["Identity", "By", "Descent"]
+    if words == ["Next-Generation", "Sequencing"]:
+        words = ["Next", "Generation", "Sequencing"]
+    if words == ["UK", "BioBank"]:
+        words = ["UK", "Biobank"]
+    if words == ["Distribution", "Of", "Fitness"]:
+        words = ["Distribution", "Of", "Fitness", "Effects"]
+    if len(words) > 0:
+        if words[-1] == "(Pca)":
+            words = words[:-1]
+    return " ".join(words)
+
+
 @dataclasses.dataclass
 class Abstract:
     author: str
@@ -32,6 +65,13 @@ class Abstract:
     keywords: str
     topics: str
 
+    def _normalise_keywords(self):
+        kwds = re.split(";|,|\.", self.keywords)
+        if kwds == [""]:
+            kwds = []
+        normalised = [normalise(kwd) for kwd in kwds]
+        self.keywords = [kwd for kwd in normalised if kwd != ""]
+
     def __post_init__(self):
         author = self.author
         j = author.find("[")
@@ -41,7 +81,7 @@ class Abstract:
         self.author_first_name = author.split()[0]
 
         if self.coauthors.startswith(self.author):
-            self.coauthors = self.coauthors[len(self.author):]
+            self.coauthors = self.coauthors[len(self.author) :]
 
         self.author_list = self.author
         if len(self.coauthors) > 0:
@@ -49,15 +89,17 @@ class Abstract:
                 self.author_list += ","
             self.author_list += f" {self.coauthors}"
         self.author = author
-        print(self.author, "\t", self.author_list)
 
+        self._normalise_keywords()
 
     def as_html(self, out):
         print(f"<table id='{self.id}'>\n", file=out)
 
         print("<tr>\n", file=out)
-        anchor = f"<a href='abstracts/index.html#{self.id}' title='{self.id}'>{self.id}</a>"
-        print(f"\t<td class='date' rowspan='4'>{anchor}</td>\n", file=out)
+        anchor = (
+            f"<a href='abstracts/index.html#{self.id}' title='{self.id}'>{self.id}</a>"
+        )
+        print(f"\t<td class='date' rowspan='6'>{anchor}</td>\n", file=out)
         print(f"\t<td class='title'>{html_esc(self.title)}</td>\n", file=out)
         print("</tr>\n", file=out)
 
@@ -67,7 +109,28 @@ class Abstract:
         print("</tr>\n", file=out)
 
         print("<tr>\n", file=out)
-        print(f"\t<td class='speaker'>{html_esc(self.affiliations)}</td>\n", file=out)
+        print(
+            "\t<td class='speaker'><b>Affiliations:</b> "
+            f"{html_esc(self.affiliations)}</td>\n",
+            file=out,
+        )
+        print("</tr>\n", file=out)
+
+        print("<tr>\n", file=out)
+        print(
+            f"\t<td class='speaker'><b>Topics:</b> {html_esc(self.topics)}</td>\n",
+            file=out,
+        )
+        print("</tr>\n", file=out)
+
+        print("<tr>\n", file=out)
+        if len(self.keywords) > 0:
+            keywords = ", ".join(self.keywords)
+            print(
+                f"\t<td class='speaker'><b>Keywords:</b> "
+                f"{html_esc(keywords)}</td>\n",
+                file=out,
+            )
         print("</tr>\n", file=out)
 
         text = textwrap.indent(textwrap.fill(html_esc(self.text)), prefix="\t\t")
@@ -102,7 +165,7 @@ def process_talks(out):
             abstract = Abstract(
                 # email=line["Username"],
                 author=line["Presenter name"],
-                id = f"T{id:02d}",
+                id=f"T{id:02d}",
                 coauthors=line["Coauthors"],
                 affiliations=line["Affiliations"],
                 title=line["Title"],
@@ -119,6 +182,7 @@ def process_talks(out):
     book = AbstractBook(abstracts)
     book.as_html(out)
     return abstracts
+
 
 def process_posters(out):
 
@@ -152,6 +216,7 @@ def process_posters(out):
     book.as_html(out)
     return abstracts
 
+
 def process_authors(abstracts, out):
     by_name = collections.defaultdict(list)
     for ab in abstracts:
@@ -167,8 +232,20 @@ def process_authors(abstracts, out):
         print("<p>", s, "</p>", file=out)
 
 
+def process_keywords(abstracts):
+    keywords = []
+    for ab in abstracts:
+        keywords.extend(ab.keywords)
+    keywords.sort()
+    with open("keywords.txt", "w") as f:
+        for kw in keywords:
+            print(kw, file=f)
+
+
 if __name__ == "__main__":
     with open("tmp.html", "w") as f:
         ab1 = process_talks(f)
         ab2 = process_posters(f)
         process_authors(ab1 + ab2, f)
+
+    process_keywords(ab1 + ab2)
