@@ -158,7 +158,6 @@ Machine Learning
 Machine Learning
 Machine Learning
 Mathematical Guarantees
-Metagenome Sequencing
 Mixed Models
 Model Checking
 Model Selection
@@ -189,7 +188,6 @@ PSMC
 PSMC
 Pangenomes
 Parent Dependent Mutations
-Pathogen Detection
 Perturbation
 Pharmacogenetics
 Phenotype Prediction
@@ -214,8 +212,6 @@ Population Stratification
 Positive Selection
 Principal Component Analysis
 Principal Component Analysis
-Probabilistic Graphical Models
-Probabilistic Modelling
 Protein Function Predictions
 Pseudobulk
 Pseudoreplication
