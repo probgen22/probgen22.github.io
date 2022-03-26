@@ -14,7 +14,7 @@ import unicodedata
 
 import markdown_strings
 
-WITHDRAWN = ["P11",]
+WITHDRAWN = ["P11", "P52"]
 
 def md_esc(s):
     return markdown_strings.esc_format(s)

@@ -16,7 +16,6 @@ Ancestral Recombination Graph
 Ancestral Recombination Graph
 Ancestral Recombination Graph
 Ancestral Recombination Graph
-Ancestral Selection Graph
 Ancestry
 Ancestry Inference
 Ancient DNA
@@ -88,7 +87,6 @@ Demography
 Demography
 Distribution Of Fitness Effects
 Distribution Of Fitness Effects
-Duality
 Effective Population Size
 Embryo Selection
 Epigenetics
@@ -99,7 +97,6 @@ Expectation-Maximisation
 Experimental Evolution
 Extreme Value Theory
 Fine Mapping
-Frequency Dependent Selection
 Function Data Analysis
 Functiona RNAs
 Functional Annotations
@@ -215,7 +212,6 @@ Principal Component Analysis
 Protein Function Predictions
 Pseudobulk
 Pseudoreplication
-Random Environment
 Randomized Singular Value Decomposition (Rsvd)
 Rare Variants Analysis
 Recombination
