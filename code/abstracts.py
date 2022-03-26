@@ -10,9 +10,11 @@ import random
 from typing import List
 import re
 import html
+import unicodedata
 
 import markdown_strings
 
+WITHDRAWN = ["P11",]
 
 def md_esc(s):
     return markdown_strings.esc_format(s)
@@ -20,6 +22,12 @@ def md_esc(s):
 
 def html_esc(s):
     return html.escape(s)
+
+def strip_accents(text):
+    text = unicodedata.normalize('NFD', text)
+    text = text.encode('ascii', 'ignore')
+    text = text.decode("utf-8")
+    return str(text)
 
 
 def normalise(kwd):
@@ -92,19 +100,35 @@ class Abstract:
 
         self._normalise_keywords()
 
+
     def as_html(self, out):
+        small_words = ['a']
+        if "T" in self.id:
+            small_words.append("the")
+        self.slack_id = "-".join([
+            self.id.lower(),
+            self.author_last_name.lower(),
+            next(w for w in self.title.lower().split() if w not in small_words).replace(":", "")
+        ])
+
         print(f"<table id='{self.id}'>\n", file=out)
 
         print("<tr>\n", file=out)
         anchor = (
             f"<a href='abstracts/index.html#{self.id}' title='{self.id}'>{self.id}</a>"
         )
-        print(f"\t<td class='date' rowspan='6'>{anchor}</td>\n", file=out)
+        print(f"\t<td class='date'>{anchor}</td>\n", file=out)
         print(f"\t<td class='title'>{html_esc(self.title)}</td>\n", file=out)
         print("</tr>\n", file=out)
 
         authors = html_esc(self.author_list)
         print("<tr>\n", file=out)
+        print(f"""
+        \t<td class='slack' rowspan='5'>
+            <a href='https://probgen22.slack.com/messages/{strip_accents(self.slack_id)}'>
+              <img src='assets/slack.svg'/><br/>{"Visit poster" if "P" in self.id else "Discussion"}
+            </a>
+          </td>\n""", file=out)
         print(f"\t<td class='speaker'>{authors}</td>\n", file=out)
         print("</tr>\n", file=out)
 
@@ -209,7 +233,7 @@ def process_posters(out):
     for j, ab in enumerate(abstracts, 1):
         ab.id = f"P{j:02d}"
         # print(f"{ab.id}-{ab.author_last_name}")
-
+    abstracts = [a for a in abstracts if a.id not in WITHDRAWN]
     title = "Posters"
     print(f"<h3><a name='{title}'>{title}</a></h3>", file=out)
     book = AbstractBook(abstracts)

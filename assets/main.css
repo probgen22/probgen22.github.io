@@ -143,6 +143,12 @@ td.footer{width:auto; text-align:center; vertical-align:middle;}
 }
 
 
+.slack {
+    text-align: center;
+}
 
+.slack img{
+    width: 30px;
+}
 
 
